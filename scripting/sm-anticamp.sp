@@ -3,10 +3,12 @@
 #include <cstrike>
 
 #pragma semicolon 1
+#pragma newdecls required
 
-#define YELLOW				 "\x01"
-#define TEAMCOLOR			 "\x03"
-#define GREEN				 "\x04"
+#define MESSAGE_PREFIX "[\x02Anti-Camp\x01]"
+#define YELLOW "\x01"
+#define TEAMCOLOR "\x03"
+#define GREEN "\x04"
 #define NON_CAMPER_DELAY 1.0
 #define MAX_WEAPONS 49
 
@@ -25,66 +27,67 @@ enum GameType
 	GAME_CSS,
 	GAME_CSGO
 };
-new GameType:g_iGame;
-new String:WeaponConfigFile[PLATFORM_MAX_PATH];
-new const String:g_sWeaponList[MAX_WEAPONS][13] = {"glock","usp","p228","deagle","elite","fiveseven","m3",
-													"xm1014","galil","ak47","scout","sg552","awp","g3sg1",
-													"famas","m4a1","aug","sg550","mac10","tmp","mp5navy",
-													"ump45","p90","m249","flashbang","hegrenade","smokegrenade","c4","knife",
-													"mp7","mp9","bizon","galilar","ssg08","scar20","hkp2000","tec9","negev",
-													"p250","sg556","sg553","sawedoff","mag7","nova","knifegg","taser","molotov",
-													"incgrenade","decoy"
-													};
+GameType g_iGame;
+char WeaponConfigFile[PLATFORM_MAX_PATH];
+static const char g_sWeaponList[MAX_WEAPONS][13] = {
+	"glock","usp","p228","deagle","elite","fiveseven","m3",
+	"xm1014","galil","ak47","scout","sg552","awp","g3sg1",
+	"famas","m4a1","aug","sg550","mac10","tmp","mp5navy",
+	"ump45","p90","m249","flashbang","hegrenade","smokegrenade","c4","knife",
+	"mp7","mp9","bizon","galilar","ssg08","scar20","hkp2000","tec9","negev",
+	"p250","sg556","sg553","sawedoff","mag7","nova","knifegg","taser","molotov",
+	"incgrenade","decoy"
+};
 
-new g_iWeaponCampTime[MAX_WEAPONS];
-new g_iOffsLastPlaceName = -1;
-new g_iOffsEyeAngle = -1;
+int g_iWeaponCampTime[MAX_WEAPONS];
+int g_iOffsLastPlaceName = -1;
+int g_iOffsEyeAngle = -1;
 
-new Float:g_fLastPos[MAXPLAYERS + 1][3];
-new Float:g_fSpawnEyeAng[MAXPLAYERS + 1][3];
+float g_fLastPos[MAXPLAYERS + 1][3];
+float g_fSpawnEyeAng[MAXPLAYERS + 1][3];
 
-new g_timerCount[MAXPLAYERS + 1];
+int g_timerCount[MAXPLAYERS + 1];
 
-new bool:g_bIsAfk[MAXPLAYERS + 1];
-new bool:g_bIsBlind[MAXPLAYERS + 1];
-new bool:g_bIsCtMap = false;
-new bool:g_bIsTMap = false;
-new bool:g_bWeaponCfg = false;
-new bool:g_bTeamsHaveAlivePlayers = false;
+bool g_bIsAfk[MAXPLAYERS + 1];
+bool g_bIsBlind[MAXPLAYERS + 1];
+bool g_bIsCtMap = false;
+bool g_bIsTMap = false;
+bool g_bWeaponCfg = false;
+bool g_bTeamsHaveAlivePlayers = false;
 
-new Handle:g_hCampTimerList[MAXPLAYERS + 1];
-new Handle:g_hPunishTimerList[MAXPLAYERS + 1];
-new Handle:g_hDelayTimerList[MAXPLAYERS + 1];
+Handle g_hCampTimerList[MAXPLAYERS + 1];
+Handle g_hPunishTimerList[MAXPLAYERS + 1];
+Handle g_hDelayTimerList[MAXPLAYERS + 1];
 
 Handle g_CvarEnablePrint = INVALID_HANDLE;
-new Handle:g_CvarBeacon = INVALID_HANDLE;
-new Handle:g_CvarEnable = INVALID_HANDLE;
-new Handle:g_CvarSlapSlay = INVALID_HANDLE;
-new Handle:g_CvarTakeCash = INVALID_HANDLE;
-new Handle:g_CvarBlind = INVALID_HANDLE;
-new Handle:g_CvarSlapDmg = INVALID_HANDLE;
-new Handle:g_CvarPunishDelay = INVALID_HANDLE;
-new Handle:g_CvarPunishFreq = INVALID_HANDLE;
-new Handle:g_CvarPunishAnyway = INVALID_HANDLE;
-new Handle:g_CvarMinHealth = INVALID_HANDLE;
-new Handle:g_CvarMinCash = INVALID_HANDLE;
-new Handle:g_CvarRadius = INVALID_HANDLE;
-new Handle:g_CvarCampTime = INVALID_HANDLE;
-new Handle:g_CvarAllowTCamp = INVALID_HANDLE;
-new Handle:g_CvarAllowTCampPlanted = INVALID_HANDLE;
-new Handle:g_CvarAllowCtCamp = INVALID_HANDLE;
-new Handle:g_CvarAllowCtCampDropped = INVALID_HANDLE;
+Handle g_CvarBeacon = INVALID_HANDLE;
+Handle g_CvarEnable = INVALID_HANDLE;
+Handle g_CvarSlapSlay = INVALID_HANDLE;
+Handle g_CvarTakeCash = INVALID_HANDLE;
+Handle g_CvarBlind = INVALID_HANDLE;
+Handle g_CvarSlapDmg = INVALID_HANDLE;
+Handle g_CvarPunishDelay = INVALID_HANDLE;
+Handle g_CvarPunishFreq = INVALID_HANDLE;
+Handle g_CvarPunishAnyway = INVALID_HANDLE;
+Handle g_CvarMinHealth = INVALID_HANDLE;
+Handle g_CvarMinCash = INVALID_HANDLE;
+Handle g_CvarRadius = INVALID_HANDLE;
+Handle g_CvarCampTime = INVALID_HANDLE;
+Handle g_CvarAllowTCamp = INVALID_HANDLE;
+Handle g_CvarAllowTCampPlanted = INVALID_HANDLE;
+Handle g_CvarAllowCtCamp = INVALID_HANDLE;
+Handle g_CvarAllowCtCampDropped = INVALID_HANDLE;
 ConVar sm_anticamp_slap_vel, sm_anticamp_slap_speedmax;
-new g_beamSprite;
-new g_haloSprite;
-new g_MoneyOffset;
+int g_beamSprite;
+int g_haloSprite;
+int g_MoneyOffset;
 
-new g_iBRColorT[] = {150, 0, 0, 255};
-new g_iBRColorCT[] = {0, 0, 150, 255};
+int g_iBRColorT[] = {150, 0, 0, 255};
+int g_iBRColorCT[] = {0, 0, 150, 255};
 
-new UserMsg:g_FadeUserMsgId;
+UserMsg g_FadeUserMsgId;
 
-public OnPluginStart()
+public void OnPluginStart()
 {
 	g_CvarEnable = CreateConVar("sm_anticamp_enable", "1", "Set 0 to disable anticamp", 0, true, 0.0, true, 1.0);
 	g_CvarEnablePrint = CreateConVar("sm_anticamp_enable_print", "1", "Set 0 to disable chat messages", 0, true, 0.0, true, 1.0);
@@ -107,7 +110,7 @@ public OnPluginStart()
 	g_CvarAllowCtCamp = CreateConVar("sm_anticamp_allow_ct_camp", "0", "Set 1 to allow camping for CTs on de maps. Set 0 to disable", 0, true, 0.0, true, 1.0);
 	g_CvarAllowCtCampDropped = CreateConVar("sm_anticamp_allow_ct_camp_dropped", "1", "Set 1 to allow camping for CTs if bomb dropped. Is only needed if sm_anticamp_ct_camp is 0", 0, true, 0.0, true, 1.0);
 
-	decl String:gamedir[PLATFORM_MAX_PATH];
+	char gamedir[PLATFORM_MAX_PATH];
 	GetGameFolderName(gamedir, sizeof(gamedir));
 	if(strcmp(gamedir, "cstrike") == 0)
 	{
@@ -143,7 +146,7 @@ public OnPluginStart()
 	//AutoExecConfig(true,"plugin.anticamp","sourcemod");
 }
 
-public OnMapStart()
+public void OnMapStart()
 {
 	// beacon sound
 	PrecacheSound("buttons/button17.wav",true);
@@ -175,18 +178,18 @@ public OnMapStart()
 	ParseConfig();
 }
 
-ParseConfig()
+void ParseConfig()
 {
-	decl String:PathToConfigFile[PLATFORM_MAX_PATH];
+	char PathToConfigFile[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM, PathToConfigFile, sizeof(PathToConfigFile), WeaponConfigFile);
 
 	if(!FileExists(PathToConfigFile))
 		LogMessage("%s not parsed...file doesn't exist! Using sm_anticamp_camptime", PathToConfigFile);
 	else
 	{
-		new Handle:filehandle = OpenFile(PathToConfigFile, "r");
+		Handle filehandle = OpenFile(PathToConfigFile, "r");
 
-		decl String:buffer[32];
+		char buffer[32];
 
 		while(!IsEndOfFile(filehandle))
 		{
@@ -196,7 +199,7 @@ ParseConfig()
 			if(buffer[0] == '/' || buffer[0] == '\0')
 				continue;
 
-			for(new i=0;i<MAX_WEAPONS;i++)
+			for(int i=0;i<MAX_WEAPONS;i++)
 			{
 				if(StrContains(buffer, g_sWeaponList[i], false) != -1)
 				{
@@ -217,17 +220,17 @@ ParseConfig()
 	}
 }
 
-GetWeaponCampTime(client)
+stock int GetWeaponCampTime(int client)
 {
 	if(!g_bWeaponCfg)
 		return GetConVarInt(g_CvarCampTime);
 
 	// get weapon name
-	decl String:weapon[20];
+	char weapon[20];
 	GetClientWeapon(client,weapon,20);
 	ReplaceString(weapon, 20, "weapon_", "");
 
-	for(new i=0;i<MAX_WEAPONS;i++)
+	for(int i=0;i<MAX_WEAPONS;i++)
 	{
 		if(StrEqual(g_sWeaponList[i], weapon, false) && g_iWeaponCampTime[i])
 			return g_iWeaponCampTime[i];
@@ -236,9 +239,9 @@ GetWeaponCampTime(client)
 	return	GetConVarInt(g_CvarCampTime);
 }
 
-bool:IsCamping(client)
+stock bool IsCamping(int client)
 {
-	new Float:CurrentPos[3];
+	float CurrentPos[3];
 	GetClientAbsOrigin(client, CurrentPos);
 	if(GetVectorDistance(g_fLastPos[client], CurrentPos) < GetConVarInt(g_CvarRadius))
 	{
@@ -253,11 +256,11 @@ bool:IsCamping(client)
 	return false;
 }
 
-bool:CheckAliveTeams()
+stock bool CheckAliveTeams()
 {
-	new alivect, alivet, team;
+	int alivect, alivet, team;
 	alivect = 0, alivet = 0;
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i) && IsPlayerAlive(i))
 		{
@@ -276,7 +279,7 @@ bool:CheckAliveTeams()
 }
 
 
-public Action:EventPlayerDeath(Handle:event,const String:name[],bool:dontBroadcast)
+public Action EventPlayerDeath(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -288,7 +291,7 @@ public Action:EventPlayerDeath(Handle:event,const String:name[],bool:dontBroadca
 	return Plugin_Continue;
 }
 
-public Action:EventBombPickup(Handle:event,const String:name[],bool:dontBroadcast)
+public Action EventBombPickup(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -309,7 +312,7 @@ public Action:EventBombPickup(Handle:event,const String:name[],bool:dontBroadcas
 	return Plugin_Continue;
 }
 
-public Action:EventBombDropped(Handle:event,const String:name[],bool:dontBroadcast)
+public Action EventBombDropped(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -327,7 +330,7 @@ public Action:EventBombDropped(Handle:event,const String:name[],bool:dontBroadca
 	return Plugin_Continue;
 }
 
-public Action:EventBombPlanted(Handle:event,const String:name[],bool:dontBroadcast)
+public Action EventBombPlanted(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -346,7 +349,7 @@ public Action:EventBombPlanted(Handle:event,const String:name[],bool:dontBroadca
 	return Plugin_Continue;
 }
 
-public Action:EventPlayerSpawn(Handle:event,const String:name[],bool:dontBroadcast)
+public Action EventPlayerSpawn(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -389,7 +392,7 @@ public Action:EventPlayerSpawn(Handle:event,const String:name[],bool:dontBroadca
 	return Plugin_Continue;
 }
 
-public Action:EventRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+public Action EventRoundEnd(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
@@ -412,7 +415,7 @@ public Action:EventRoundEnd(Handle:event, const String:name[], bool:dontBroadcas
 	return Plugin_Continue;
 }
 
-public Action:CheckCamperTimer(Handle:timer, any:client)
+public Action CheckCamperTimer(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -428,7 +431,7 @@ public Action:CheckCamperTimer(Handle:timer, any:client)
 	}
 	else
 	{
-		new Float:ClientEyeAng[3];
+		float ClientEyeAng[3];
 		GetEntDataVector(client, g_iOffsEyeAngle, ClientEyeAng);
 
 		if(FloatAbs(g_fSpawnEyeAng[client][1] - ClientEyeAng[1]) > 15.0)
@@ -443,7 +446,7 @@ public Action:CheckCamperTimer(Handle:timer, any:client)
 	return Plugin_Handled;
 }
 
-public Action:CaughtCampingTimer(Handle:timer, any:client)
+public Action CaughtCampingTimer(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -471,23 +474,23 @@ public Action:CaughtCampingTimer(Handle:timer, any:client)
 	else
 	{
 		// get client details
-		decl String:name[32];
-		decl String:camperTeam[18];
-		decl String:camperSteamID[64];
+		char name[32];
+		char camperTeam[18];
+		char camperSteamID[64];
 		GetClientName(client, name, sizeof(name));
 		GetTeamName(GetClientTeam(client),camperTeam,sizeof(camperTeam));
 		GetClientAuthString(client, camperSteamID, sizeof(camperSteamID));
 
 		// get weapon name
-		decl String:weapon[20];
+		char weapon[20];
 		GetClientWeapon(client,weapon,20);
 		ReplaceString(weapon, 20, "weapon_", "");
 
 		// get place name
-		decl String:place[24];
+		char place[24];
 		GetEntDataString(client, g_iOffsLastPlaceName, place, sizeof(place));
 
-		new bool:Location = StrEqual(place, "", false);
+		bool Location = StrEqual(place, "", false);
 
 		// log camping
 		LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
@@ -495,7 +498,7 @@ public Action:CaughtCampingTimer(Handle:timer, any:client)
 		// print to chat
 		if(!GetConVarBool(g_CvarEnablePrint))
 		{
-			decl String:Saytext[192];
+			char Saytext[192];
 			
 			for(new i=1; i<=MaxClients; i++)
 			{
@@ -539,7 +542,7 @@ public Action:CaughtCampingTimer(Handle:timer, any:client)
 	return Plugin_Handled;
 }
 
-public Action:PunishDelayTimer(Handle:timer, any:client)
+public Action:PunishDelayTimer(Handle:timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -555,7 +558,7 @@ public Action:PunishDelayTimer(Handle:timer, any:client)
 	return Plugin_Handled;
 }
 
-public Action:CamperTimer(Handle:timer, any:client)
+public Action:CamperTimer(Handle:timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -574,7 +577,7 @@ public Action:CamperTimer(Handle:timer, any:client)
 	return Plugin_Handled;
 }
 
-public Action:PunishTimer(Handle:timer, any:client)
+public Action:PunishTimer(Handle:timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -595,7 +598,7 @@ public Action:PunishTimer(Handle:timer, any:client)
 
 		CreateTimer(0.2, BeaconTimer2, client);
 
-		new Float:vecPos[3];
+		float vecPos[3];
 		GetClientAbsOrigin(client, vecPos);
 		EmitSoundToAll("buttons/button17.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vecPos, NULL_VECTOR, true, 0.0);
 	}
@@ -728,7 +731,7 @@ stock SlowDownPlayer(int client){
 	}
 }
 
-public Action:BeaconTimer2(Handle:timer, any:client)
+public Action:BeaconTimer2(Handle:timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -750,7 +753,7 @@ public Action:BeaconTimer2(Handle:timer, any:client)
 
 BeamRing(client, color[4])
 {
-	new Float:vec[3];
+	float vec[3];
 	GetClientAbsOrigin(client, vec);
 
 	vec[2] += 10;
@@ -761,7 +764,7 @@ BeamRing(client, color[4])
 
 SayText2(to, from, bool:chat, const String:param1[], const String:param2[])
 {
-	new Handle:hBf = INVALID_HANDLE;
+	Handle hBf = INVALID_HANDLE;
 
 	hBf = StartMessageOne("SayText2", to);
 
@@ -774,11 +777,11 @@ SayText2(to, from, bool:chat, const String:param1[], const String:param2[])
 
 stock PbSayText2(client, author = 0, bool:bWantsToChat = false, const String:szFormat[], any:...)
 {
-	decl String:szSendMsg[192];
+	char szSendMsg[192];
 	VFormat(szSendMsg, sizeof(szSendMsg), szFormat, 5);
 	StrCat(szSendMsg, sizeof(szSendMsg), "\n");
 
-	new Handle:pb = StartMessageOne("SayText2", client);
+	Handle pb = StartMessageOne("SayText2", client);
 
 	if (pb != INVALID_HANDLE) {
 		PbSetInt(pb, "ent_idx", author);
@@ -838,7 +841,7 @@ PerformBlind(target, amount)
 		else
 			flags = (0x0002 | 0x0008);
 
-		new Handle:message = StartMessageEx(g_FadeUserMsgId, targets, 1);
+		Handle message = StartMessageEx(g_FadeUserMsgId, targets, 1);
 		
 		if (GetUserMessageType() == UM_Protobuf)
 		{
