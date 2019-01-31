@@ -17,7 +17,7 @@ public Plugin myinfo =
 	name = "Anticamp CS:S and CS:GO",
 	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = "3.1.1",
+	version = "3.1.2",
 	url = "https://github.com/b3none"
 };
 
@@ -519,7 +519,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 					continue;
 				}
 				
-				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", (i == client ? "Player camping" : "You are camping"), i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
+				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", (i == client ? "You are camping" : "Player camping"), i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
 
 				if(Location)
 				{
