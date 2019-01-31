@@ -18,7 +18,7 @@ public Plugin myinfo =
 	name = "Anticamp CS:S and CS:GO",
 	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = "2.5.5",
+	version = "3.0.0",
 	url = "https://github.com/b3none"
 };
 
@@ -130,6 +130,7 @@ public void OnPluginStart()
 	HookEvent("bomb_pickup", EventBombPickup, EventHookMode_PostNoCopy);
 	HookEvent("round_end", EventRoundEnd, EventHookMode_PostNoCopy);
 	HookEvent("cs_win_panel_match", EventRoundEnd, EventHookMode_PostNoCopy); // Sometimes round_end did not fire
+	
 	if(g_iGame == GAME_CSGO)
 	{
 		HookEvent("announce_phase_end", EventRoundEnd, EventHookMode_PostNoCopy); // Sometimes round_end and cs_win_panel_match did not fire in CS:GO
@@ -149,7 +150,7 @@ public void OnPluginStart()
 public void OnMapStart()
 {
 	// beacon sound
-	PrecacheSound("buttons/button17.wav",true);
+	PrecacheSound("buttons/button17.wav", true);
 
 	if(g_iGame == GAME_CSGO)
 	{
@@ -170,9 +171,13 @@ public void OnMapStart()
 	// Check map class
 	g_bIsCtMap = g_bIsTMap = false;
 	if(FindEntityByClassname(-1, "func_hostage_rescue") != -1)
+	{
 		g_bIsCtMap = true;
+	}
 	else if(FindEntityByClassname(-1, "func_bomb_target") != -1)
+	{
 		g_bIsTMap = true;
+	}
 
 	g_bWeaponCfg = false;
 	ParseConfig();
@@ -184,7 +189,9 @@ void ParseConfig()
 	BuildPath(Path_SM, PathToConfigFile, sizeof(PathToConfigFile), WeaponConfigFile);
 
 	if(!FileExists(PathToConfigFile))
+	{
 		LogMessage("%s not parsed...file doesn't exist! Using sm_anticamp_camptime", PathToConfigFile);
+	}
 	else
 	{
 		Handle filehandle = OpenFile(PathToConfigFile, "r");
@@ -197,9 +204,11 @@ void ParseConfig()
 			TrimString(buffer);
 
 			if(buffer[0] == '/' || buffer[0] == '\0')
+			{
 				continue;
+			}
 
-			for(int i=0;i<MAX_WEAPONS;i++)
+			for(int i = 0; i < MAX_WEAPONS; i++)
 			{
 				if(StrContains(buffer, g_sWeaponList[i], false) != -1)
 				{
@@ -230,10 +239,12 @@ stock int GetWeaponCampTime(int client)
 	GetClientWeapon(client,weapon,20);
 	ReplaceString(weapon, 20, "weapon_", "");
 
-	for(int i=0;i<MAX_WEAPONS;i++)
+	for(int i = 0; i< MAX_WEAPONS;i++)
 	{
 		if(StrEqual(g_sWeaponList[i], weapon, false) && g_iWeaponCampTime[i])
+		{
 			return g_iWeaponCampTime[i];
+		}
 	}
 
 	return	GetConVarInt(g_CvarCampTime);
@@ -498,7 +509,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 		LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
 
 		// print to chat
-		if(!GetConVarBool(g_CvarEnablePrint))
+		if(GetConVarBool(g_CvarEnablePrint))
 		{
 			char Saytext[192];
 			
