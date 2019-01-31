@@ -299,7 +299,7 @@ public Action EventBombPickup(Handle event, char[] name, bool dontBroadcast)
 
 	if(GetConVarBool(g_CvarAllowCtCampDropped) && !GetConVarBool(g_CvarAllowCtCamp))
 	{
-		for(new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && IsPlayerAlive(i) && GetClientTeam(i) == CS_TEAM_CT && g_hCampTimerList[i] == INVALID_HANDLE)
 			{
@@ -320,7 +320,7 @@ public Action EventBombDropped(Handle event, char[] name, bool dontBroadcast)
 
 	if(GetConVarBool(g_CvarAllowCtCampDropped) && !GetConVarBool(g_CvarAllowCtCamp))
 	{
-		for(new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && g_hCampTimerList[i] != INVALID_HANDLE && GetClientTeam(i) == CS_TEAM_CT)
 				ResetTimer(i);
@@ -338,7 +338,7 @@ public Action EventBombPlanted(Handle event, char[] name, bool dontBroadcast)
 
 	if(GetConVarBool(g_CvarAllowTCampPlanted))
 	{
-		for(new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && g_hCampTimerList[i] != INVALID_HANDLE && GetClientTeam(i) == CS_TEAM_T)
 				ResetTimer(i);
@@ -356,10 +356,10 @@ public Action EventPlayerSpawn(Handle event, char[] name, bool dontBroadcast)
 		return Plugin_Continue;
 
 	// get the client
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(GetEventInt(event, "userid"));
 
 	// get the client team
-	new clientteam = GetClientTeam(client);
+	int clientteam = GetClientTeam(client);
 
 	// return if new client
 	if(clientteam == CS_TEAM_NONE)
@@ -396,14 +396,16 @@ public Action EventRoundEnd(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	// Check if booth Teams have alive players
 	g_bTeamsHaveAlivePlayers = CheckAliveTeams();
 
 	if(g_bTeamsHaveAlivePlayers)
 	{
-		for(new i = 1; i <= MaxClients; i++)
+		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && g_hCampTimerList[i] != INVALID_HANDLE)
 			{
@@ -500,7 +502,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 		{
 			char Saytext[192];
 			
-			for(new i=1; i<=MaxClients; i++)
+			for(int i=1; i<=MaxClients; i++)
 			{
 				if(IsClientInGame(i) && !IsFakeClient(i))
 				{
@@ -542,7 +544,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 	return Plugin_Handled;
 }
 
-public Action:PunishDelayTimer(Handle:timer, int client)
+public Action PunishDelayTimer(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -558,7 +560,7 @@ public Action:PunishDelayTimer(Handle:timer, int client)
 	return Plugin_Handled;
 }
 
-public Action:CamperTimer(Handle:timer, int client)
+public Action CamperTimer(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -577,7 +579,7 @@ public Action:CamperTimer(Handle:timer, int client)
 	return Plugin_Handled;
 }
 
-public Action:PunishTimer(Handle:timer, int client)
+public Action PunishTimer(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -589,7 +591,7 @@ public Action:PunishTimer(Handle:timer, int client)
 	// create a beam effect and the anathor one immediately after
 	if(GetConVarBool(g_CvarBeacon))
 	{
-		new clientteam = GetClientTeam(client);
+		int clientteam = GetClientTeam(client);
 
 		if(clientteam == CS_TEAM_CT)
 			BeamRing(client, g_iBRColorCT);
@@ -603,16 +605,16 @@ public Action:PunishTimer(Handle:timer, int client)
 		EmitSoundToAll("buttons/button17.wav", client, SNDCHAN_AUTO, SNDLEVEL_NORMAL, SND_NOFLAGS, 1.0, SNDPITCH_NORMAL, -1, vecPos, NULL_VECTOR, true, 0.0);
 	}
 
-	new ClientHealth = GetClientHealth(client);
-	new MinHealth = GetConVarInt(g_CvarMinHealth);
+	int ClientHealth = GetClientHealth(client);
+	int MinHealth = GetConVarInt(g_CvarMinHealth);
 
 	// take player cash
 	if(GetConVarInt(g_CvarTakeCash) > 0)
 	{
 		if(ClientHealth > MinHealth || GetConVarBool(g_CvarPunishAnyway))
 		{
-			new ClientCash = GetEntData(client, g_MoneyOffset);
-			new MinCash = GetConVarInt(g_CvarMinCash);
+			int ClientCash = GetEntData(client, g_MoneyOffset);
+			int MinCash = GetConVarInt(g_CvarMinCash);
 
 			if(ClientCash > MinCash)
 			{
@@ -633,7 +635,7 @@ public Action:PunishTimer(Handle:timer, int client)
 		case 1:
 		{
 			// slap player
-			new SlapDmg = GetConVarInt(g_CvarSlapDmg);
+			int SlapDmg = GetConVarInt(g_CvarSlapDmg);
 			float pushVel = sm_anticamp_slap_vel.FloatValue;
 
 			if(ClientHealth > MinHealth)
@@ -704,7 +706,7 @@ public Action:PunishTimer(Handle:timer, int client)
 	return Plugin_Handled;
 }
 
-stock PushPlayer(int client, float A = 0.0, float B = 0.0, float C = 0.0)
+void PushPlayer(int client, float A = 0.0, float B = 0.0, float C = 0.0)
 {
 	float vecVelo[3];
 	vecVelo[0] = A;
@@ -713,7 +715,7 @@ stock PushPlayer(int client, float A = 0.0, float B = 0.0, float C = 0.0)
 	SetEntPropVector(client, Prop_Data, "m_vecBaseVelocity", vecVelo);
 }
 
-stock SlowDownPlayer(int client){
+void SlowDownPlayer(int client){
 	float fAbsVelocity[3];
 	GetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", fAbsVelocity);
 	float fCurrentSpeed = SquareRoot(Pow(fAbsVelocity[0], 2.0) + Pow(fAbsVelocity[1], 2.0));
@@ -731,7 +733,7 @@ stock SlowDownPlayer(int client){
 	}
 }
 
-public Action:BeaconTimer2(Handle:timer, int client)
+public Action BeaconTimer2(Handle timer, int client)
 {
 	// check to make sure the client is still connected and there are players in both teams
 	if(!g_bTeamsHaveAlivePlayers || !IsClientInGame(client) || !IsPlayerAlive(client))
@@ -741,7 +743,7 @@ public Action:BeaconTimer2(Handle:timer, int client)
 	}
 
 	// create beamring on client
-	new clientteam = GetClientTeam(client);
+	int clientteam = GetClientTeam(client);
 
 	if(clientteam == CS_TEAM_CT)
 		BeamRing(client, g_iBRColorCT);
@@ -751,7 +753,7 @@ public Action:BeaconTimer2(Handle:timer, int client)
 	return Plugin_Handled;
 }
 
-BeamRing(client, color[4])
+void BeamRing(int client, int color[4])
 {
 	float vec[3];
 	GetClientAbsOrigin(client, vec);
@@ -762,7 +764,7 @@ BeamRing(client, color[4])
 	TE_SendToAll();
 }
 
-SayText2(to, from, bool:chat, const String:param1[], const String:param2[])
+void SayText2(int to, int from, bool chat, char[] param1, char[] param2)
 {
 	Handle hBf = INVALID_HANDLE;
 
@@ -775,7 +777,7 @@ SayText2(to, from, bool:chat, const String:param1[], const String:param2[])
 	EndMessage();
 }
 
-stock PbSayText2(client, author = 0, bool:bWantsToChat = false, const String:szFormat[], any:...)
+void PbSayText2(int client, int author = 0, bool bWantsToChat = false, char[] szFormat, any:...)
 {
 	char szSendMsg[192];
 	VFormat(szSendMsg, sizeof(szSendMsg), szFormat, 5);
@@ -795,7 +797,7 @@ stock PbSayText2(client, author = 0, bool:bWantsToChat = false, const String:szF
 	}
 }
 
-ResetTimer(client)
+void ResetTimer(int client)
 {
 	if(g_bIsBlind[client])
 	{
@@ -822,20 +824,20 @@ ResetTimer(client)
 	}
 }
 
-PerformBlind(target, amount)
+void PerformBlind(int target, int amount)
 {
 	if(IsClientInGame(target))
 	{
-		new targets[2];
+		int targets[2];
 		targets[0] = target;
 		
-		new color[4] = { 0, 0, 0, 0 };
+		int color[4] = { 0, 0, 0, 0 };
 		color[0] = 0;
 		color[1] = 0;
 		color[2] = 0;
 		color[3] = amount;
 		
-		new flags;
+		int flags;
 		if (amount == 0)
 			flags = (0x0001 | 0x0010);
 		else
