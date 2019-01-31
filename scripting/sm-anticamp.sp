@@ -17,7 +17,7 @@ public Plugin myinfo =
 	name = "Anticamp CS:S and CS:GO",
 	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = "3.1.4",
+	version = "3.1.3",
 	url = "https://github.com/b3none"
 };
 
@@ -220,7 +220,9 @@ void ParseConfig()
 						g_iWeaponCampTime[i] = StringToInt(buffer);
 					}
 					else
+					{
 						g_iWeaponCampTime[i] = 0;
+					}
 				}
 			}
 		}
@@ -231,7 +233,9 @@ void ParseConfig()
 stock int GetWeaponCampTime(int client)
 {
 	if(!g_bWeaponCfg)
+	{
 		return GetConVarInt(g_CvarCampTime);
+	}
 
 	// get weapon name
 	char weapon[20];
@@ -253,14 +257,17 @@ stock bool IsCamping(int client)
 {
 	float CurrentPos[3];
 	GetClientAbsOrigin(client, CurrentPos);
-	if(GetVectorDistance(g_fLastPos[client], CurrentPos) < GetConVarInt(g_CvarRadius))
+	if(GetVectorDistance(g_fLastPos[client], CurrentPos) < GetConVarInt(g_CvarRadius) && !g_bIsAfk[client])
 	{
-		if(!g_bIsAfk[client])
-			if(GetClientHealth(client) > GetConVarInt(g_CvarMinHealth) || GetConVarBool(g_CvarPunishAnyway))
-				return true;
-	}
+		if(GetClientHealth(client) > GetConVarInt(g_CvarMinHealth) || GetConVarBool(g_CvarPunishAnyway))
+		{
+			return true;
+		}
+	} 
 	else if(g_bIsAfk[client])
+	{
 		g_bIsAfk[client] = false;
+	}
 
 	g_fLastPos[client] = CurrentPos;
 	return false;
@@ -276,16 +283,17 @@ stock bool CheckAliveTeams()
 		{
 			team = GetClientTeam(i);
 			if(team == CS_TEAM_CT)
+			{
 				alivect++;
+			}
 			else if(team == CS_TEAM_T)
+			{
 				alivet++;
+			}
 		}
 	}
 
-	if(alivect > 0 || alivet > 0)
-		return true;
-	else
-		return false;
+	return (alivect > 0 || alivet > 0);
 }
 
 
@@ -293,7 +301,9 @@ public Action EventPlayerDeath(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	// Check if booth Teams have alive players
 	g_bTeamsHaveAlivePlayers = CheckAliveTeams();
@@ -305,7 +315,9 @@ public Action EventBombPickup(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	if(GetConVarBool(g_CvarAllowCtCampDropped) && !GetConVarBool(g_CvarAllowCtCamp))
 	{
@@ -326,14 +338,18 @@ public Action EventBombDropped(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	if(GetConVarBool(g_CvarAllowCtCampDropped) && !GetConVarBool(g_CvarAllowCtCamp))
 	{
 		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && g_hCampTimerList[i] != INVALID_HANDLE && GetClientTeam(i) == CS_TEAM_CT)
+			{
 				ResetTimer(i);
+			}
 		}
 	}
 
@@ -344,15 +360,18 @@ public Action EventBombPlanted(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	if(GetConVarBool(g_CvarAllowTCampPlanted))
 	{
 		for(int i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i) && g_hCampTimerList[i] != INVALID_HANDLE && GetClientTeam(i) == CS_TEAM_T)
+			{
 				ResetTimer(i);
-
+			}
 		}
 	}
 
@@ -363,7 +382,9 @@ public Action EventPlayerSpawn(Handle event, char[] name, bool dontBroadcast)
 {
 	//Check if anticamp is enabled
 	if(!GetConVarBool(g_CvarEnable))
+	{
 		return Plugin_Continue;
+	}
 
 	// get the client
 	int client = GetClientOfUserId(GetEventInt(event, "userid"));
@@ -373,7 +394,9 @@ public Action EventPlayerSpawn(Handle event, char[] name, bool dontBroadcast)
 
 	// return if new client
 	if(clientteam == CS_TEAM_NONE)
+	{
 		return Plugin_Continue;
+	}
 
 	// Check if booth Teams have alive players and safe it
 	g_bTeamsHaveAlivePlayers = CheckAliveTeams();
@@ -389,11 +412,15 @@ public Action EventPlayerSpawn(Handle event, char[] name, bool dontBroadcast)
 
 	// Allow camping for t on cs maps if enabled
 	if(g_bIsCtMap && GetConVarBool(g_CvarAllowTCamp) && clientteam == CS_TEAM_T)
+	{
 		return Plugin_Continue;
+	}
 
 	// Allow camping for ct on de maps if enabled
 	if(g_bIsTMap && GetConVarBool(g_CvarAllowCtCamp) && clientteam == CS_TEAM_CT)
+	{
 		return Plugin_Continue;
+	}
 	
 	// get the players position and start the timing cycle
 	GetClientAbsOrigin(client, g_fLastPos[client]);
@@ -447,14 +474,18 @@ public Action CheckCamperTimer(Handle timer, int client)
 		GetEntDataVector(client, g_iOffsEyeAngle, ClientEyeAng);
 
 		if(FloatAbs(g_fSpawnEyeAng[client][1] - ClientEyeAng[1]) > 15.0)
+		{
 			g_bIsAfk[client] = false;
+		}
 	}
+	
 	if(IsCamping(client))
 	{
 		// it looks like this person may be camping, time to get serious
 		KillTimer(g_hCampTimerList[client]);
 		g_hCampTimerList[client] = CreateTimer(1.0, CaughtCampingTimer, client, TIMER_REPEAT);
 	}
+	
 	return Plugin_Handled;
 }
 
@@ -519,7 +550,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 					continue;
 				}
 				
-				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", (i == client ? "You are camping" : "Player camping"), i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
+				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", "Player camping", i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
 
 				if(Location)
 				{
@@ -613,9 +644,13 @@ public Action PunishTimer(Handle timer, int client)
 		int clientteam = GetClientTeam(client);
 
 		if(clientteam == CS_TEAM_CT)
+		{
 			BeamRing(client, g_iBRColorCT);
+		}
 		else if(clientteam == CS_TEAM_T)
+		{
 			BeamRing(client, g_iBRColorT);
+		}
 
 		CreateTimer(0.2, BeaconTimer2, client);
 
@@ -640,13 +675,19 @@ public Action PunishTimer(Handle timer, int client)
 				ClientCash -= GetConVarInt(g_CvarTakeCash);
 
 				if(ClientCash > MinCash)
+				{
 					SetEntData(client, g_MoneyOffset, ClientCash, 4, true);
+				}
 				else
+				{
 					SetEntData(client, g_MoneyOffset, MinCash, 4, true);
+				}
 			}
 		}
 		else if(!GetConVarBool(g_CvarPunishAnyway))
+		{
 			ResetTimer(client);
+		}
 	}
 
 	switch(GetConVarInt(g_CvarSlapSlay))
@@ -672,7 +713,9 @@ public Action PunishTimer(Handle timer, int client)
 				else
 				{
 					if(!GetConVarBool(g_CvarPunishAnyway))
+					{
 						ResetTimer(client);
+					}
 
 					SlowDownPlayer(client);
 					PushPlayer(client, 0.0, 0.0, pushVel);
@@ -694,7 +737,9 @@ public Action PunishTimer(Handle timer, int client)
 		{
 			// slay player
 			if(ClientHealth > MinHealth)
+			{
 				ForcePlayerSuicide(client);
+			}
 		}
 	}
 
@@ -719,7 +764,9 @@ public Action PunishTimer(Handle timer, int client)
 			g_bIsBlind[client] = true;
 		}
 		else if(!GetConVarBool(g_CvarPunishAnyway))
+		{
 			ResetTimer(client);
+		}
 	}
 
 	return Plugin_Handled;
@@ -765,9 +812,13 @@ public Action BeaconTimer2(Handle timer, int client)
 	int clientteam = GetClientTeam(client);
 
 	if(clientteam == CS_TEAM_CT)
+	{
 		BeamRing(client, g_iBRColorCT);
+	}
 	else if(clientteam == CS_TEAM_T)
+	{
 		BeamRing(client, g_iBRColorT);
+	}
 
 	return Plugin_Handled;
 }
@@ -804,7 +855,8 @@ void PbSayText2(int client, int author = 0, bool bWantsToChat = false, char[] sz
 
 	Handle pb = StartMessageOne("SayText2", client);
 
-	if (pb != INVALID_HANDLE) {
+	if(pb != INVALID_HANDLE)
+	{
 		PbSetInt(pb, "ent_idx", author);
 		PbSetBool(pb, "chat", bWantsToChat);
 		PbSetString(pb, "msg_name", szSendMsg);
@@ -857,14 +909,18 @@ void PerformBlind(int target, int amount)
 		color[3] = amount;
 		
 		int flags;
-		if (amount == 0)
+		if(amount == 0)
+		{
 			flags = (0x0001 | 0x0010);
+		}
 		else
+		{
 			flags = (0x0002 | 0x0008);
+		}
 
 		Handle message = StartMessageEx(g_FadeUserMsgId, targets, 1);
 		
-		if (GetUserMessageType() == UM_Protobuf)
+		if(GetUserMessageType() == UM_Protobuf)
 		{
 			PbSetInt(message, "duration", 768);
 			PbSetInt(message, "hold_time", 1536);
