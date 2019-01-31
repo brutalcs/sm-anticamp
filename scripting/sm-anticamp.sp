@@ -1,43 +1,23 @@
-/**
- * Anticamp - SourceMod plugin to detect camping players
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
- */
-
-#pragma semicolon 1
-
 #include <sourcemod>
 #include <sdktools>
-#undef REQUIRE_EXTENSIONS
 #include <cstrike>
+
+#pragma semicolon 1
 
 #define YELLOW				 "\x01"
 #define TEAMCOLOR			 "\x03"
 #define GREEN				 "\x04"
-#define PLUGIN_VERSION "2.5.4"
 #define NON_CAMPER_DELAY 1.0
 #define MAX_WEAPONS 49
 
 // Plugin definitions
-public Plugin:myinfo =
+public Plugin myinfo =
 {
 	name = "Anticamp CS:S and CS:GO",
-	author = "stachi, IT-KiLLER",
+	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = PLUGIN_VERSION,
-	url = "https://github.com/IT-KiLLER"
+	version = "2.5.5",
+	url = "https://github.com/b3none"
 };
 
 enum GameType
@@ -76,6 +56,7 @@ new Handle:g_hCampTimerList[MAXPLAYERS + 1];
 new Handle:g_hPunishTimerList[MAXPLAYERS + 1];
 new Handle:g_hDelayTimerList[MAXPLAYERS + 1];
 
+Handle g_CvarEnablePrint = INVALID_HANDLE;
 new Handle:g_CvarBeacon = INVALID_HANDLE;
 new Handle:g_CvarEnable = INVALID_HANDLE;
 new Handle:g_CvarSlapSlay = INVALID_HANDLE;
@@ -105,9 +86,8 @@ new UserMsg:g_FadeUserMsgId;
 
 public OnPluginStart()
 {
-	CreateConVar("anticamp_css_version", PLUGIN_VERSION, "anticamp_css_version", FCVAR_PLUGIN|FCVAR_NOTIFY|FCVAR_DONTRECORD);
-
 	g_CvarEnable = CreateConVar("sm_anticamp_enable", "1", "Set 0 to disable anticamp", 0, true, 0.0, true, 1.0);
+	g_CvarEnablePrint = CreateConVar("sm_anticamp_enable_print", "1", "Set 0 to disable chat messages", 0, true, 0.0, true, 1.0);
 	g_CvarBeacon = CreateConVar("sm_anticamp_beacon", "1", "Set 0 to disable beacons", 0, true, 0.0, true, 1.0);
 	g_CvarTakeCash = CreateConVar("sm_anticamp_take_cash", "0", "Amount of money decrease while camping every sm_anticamp_punish_freq. Set 0 to disable", 0, true, 0.0, true, 16000.0);
 	g_CvarMinCash = CreateConVar("sm_anticamp_mincash", "0", "Minimum money a camper reserves", 0, true, 0.0, true, 16000.0);
@@ -513,20 +493,24 @@ public Action:CaughtCampingTimer(Handle:timer, any:client)
 		LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
 
 		// print to chat
-		decl String:Saytext[192];
-		for(new i=1; i<=MaxClients; i++)
+		if(!GetConVarBool(g_CvarEnablePrint))
 		{
-			if(IsClientInGame(i) && !IsFakeClient(i))
+			decl String:Saytext[192];
+			
+			for(new i=1; i<=MaxClients; i++)
 			{
-				Format(Saytext, sizeof(Saytext), "\x04[Anticamp]\x01 %T", "Player camping", i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
-
-				if(Location)
-					ReplaceString(Saytext, 192, "@", "");
-
-				if(GetUserMessageType() == UM_Protobuf) {
-					PbSayText2(i, client, true, Saytext, name);
-				}else{
-					SayText2(i, client, true, Saytext, name);
+				if(IsClientInGame(i) && !IsFakeClient(i))
+				{
+					Format(Saytext, sizeof(Saytext), "\x04[Anticamp]\x01 %T", "Player camping", i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
+	
+					if(Location)
+						ReplaceString(Saytext, 192, "@", "");
+	
+					if(GetUserMessageType() == UM_Protobuf) {
+						PbSayText2(i, client, true, Saytext, name);
+					}else{
+						SayText2(i, client, true, Saytext, name);
+					}
 				}
 			}
 		}
