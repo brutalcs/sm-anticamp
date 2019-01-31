@@ -18,7 +18,7 @@ public Plugin myinfo =
 	name = "Anticamp CS:S and CS:GO",
 	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = "3.0.0",
+	version = "3.0.1",
 	url = "https://github.com/b3none"
 };
 
@@ -90,7 +90,7 @@ UserMsg g_FadeUserMsgId;
 public void OnPluginStart()
 {
 	g_CvarEnable = CreateConVar("sm_anticamp_enable", "1", "Set 0 to disable anticamp", 0, true, 0.0, true, 1.0);
-	g_CvarEnablePrint = CreateConVar("sm_anticamp_enable_print", "1", "Set 0 to disable chat messages", 0, true, 0.0, true, 1.0);
+	g_CvarEnablePrint = CreateConVar("sm_anticamp_enable_print", "1", "Set 0 to disable chat messages to all except the camper", 0, true, 0.0, true, 1.0);
 	g_CvarBeacon = CreateConVar("sm_anticamp_beacon", "1", "Set 0 to disable beacons", 0, true, 0.0, true, 1.0);
 	g_CvarTakeCash = CreateConVar("sm_anticamp_take_cash", "0", "Amount of money decrease while camping every sm_anticamp_punish_freq. Set 0 to disable", 0, true, 0.0, true, 16000.0);
 	g_CvarMinCash = CreateConVar("sm_anticamp_mincash", "0", "Minimum money a camper reserves", 0, true, 0.0, true, 16000.0);
@@ -509,24 +509,31 @@ public Action CaughtCampingTimer(Handle timer, int client)
 		LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
 
 		// print to chat
-		if(GetConVarBool(g_CvarEnablePrint))
+		char Saytext[192];
+		
+		for(int i = 1; i <= MaxClients; i++)
 		{
-			char Saytext[192];
-			
-			for(int i=1; i<=MaxClients; i++)
+			if(IsClientInGame(i) && !IsFakeClient(i))
 			{
-				if(IsClientInGame(i) && !IsFakeClient(i))
+				if(!GetConVarBool(g_CvarEnablePrint) && i != client)
 				{
-					Format(Saytext, sizeof(Saytext), "\x04[Anticamp]\x01 %T", "Player camping", i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
-	
-					if(Location)
-						ReplaceString(Saytext, 192, "@", "");
-	
-					if(GetUserMessageType() == UM_Protobuf) {
-						PbSayText2(i, client, true, Saytext, name);
-					}else{
-						SayText2(i, client, true, Saytext, name);
-					}
+					continue;
+				}
+				
+				Format(Saytext, sizeof(Saytext), "%s %T", "Player camping", MESSAGE_PREFIX, i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
+
+				if(Location)
+				{
+					ReplaceString(Saytext, 192, "@", "");
+				}
+
+				if(GetUserMessageType() == UM_Protobuf) 
+				{
+					PbSayText2(i, client, true, Saytext, name);
+				}
+				else
+				{
+					SayText2(i, client, true, Saytext, name);
 				}
 			}
 		}
@@ -536,7 +543,9 @@ public Action CaughtCampingTimer(Handle timer, int client)
 
 		// start beacon timer
 		if(GetConVarFloat(g_CvarPunishDelay) == GetConVarFloat(g_CvarPunishFreq))
+		{
 			g_hPunishTimerList[client] = CreateTimer(GetConVarFloat(g_CvarPunishDelay), PunishTimer, client, TIMER_REPEAT);
+		}
 		else if(GetConVarInt(g_CvarPunishDelay) <= 0)
 		{
 			g_hPunishTimerList[client] = CreateTimer(0.1, PunishTimer, client, TIMER_REPEAT);
