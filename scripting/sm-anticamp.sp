@@ -135,9 +135,9 @@ public void OnPluginStart()
 		HookEvent("announce_phase_end", EventRoundEnd, EventHookMode_PostNoCopy); // Sometimes round_end and cs_win_panel_match did not fire in CS:GO
 	}
 
-	g_iOffsEyeAngle = FindSendPropOffs("CCSPlayer","m_angEyeAngles[0]");
-	g_iOffsLastPlaceName = FindSendPropOffs("CBasePlayer", "m_szLastPlaceName");
-	g_MoneyOffset = FindSendPropOffs("CCSPlayer", "m_iAccount");
+	g_iOffsEyeAngle = FindSendPropInfo("CCSPlayer","m_angEyeAngles[0]");
+	g_iOffsLastPlaceName = FindSendPropInfo("CBasePlayer", "m_szLastPlaceName");
+	g_MoneyOffset = FindSendPropInfo("CCSPlayer", "m_iAccount");
 	g_FadeUserMsgId = GetUserMessageId("Fade");
 
 	LoadTranslations("anticamp.phrases");
@@ -481,7 +481,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 		char camperSteamID[64];
 		GetClientName(client, name, sizeof(name));
 		GetTeamName(GetClientTeam(client),camperTeam,sizeof(camperTeam));
-		GetClientAuthString(client, camperSteamID, sizeof(camperSteamID));
+		GetClientAuthId(client, AuthId_SteamID64, camperSteamID, sizeof(camperSteamID));
 
 		// get weapon name
 		char weapon[20];
