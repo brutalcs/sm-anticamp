@@ -536,7 +536,8 @@ public Action CaughtCampingTimer(Handle timer, int client)
 		bool Location = StrEqual(place, "", false);
 
 		// log camping
-		LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
+		// This line was removed as it was causing a bug with GameME
+		// LogToGame("\"%s<%d><%s><%s>\" triggered \"camper\"",name,GetClientUserId(client),camperSteamID,camperTeam);
 
 		// print to chat
 		char Saytext[192];
@@ -550,7 +551,7 @@ public Action CaughtCampingTimer(Handle timer, int client)
 					continue;
 				}
 				
-				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", "Player camping", i, name,weapon,place,YELLOW,TEAMCOLOR,YELLOW,GREEN,YELLOW,GREEN);
+				Format(Saytext, sizeof(Saytext), "[\x02Anti-Camp\x01] %T", "Player camping", i, name, weapon, place, YELLOW, TEAMCOLOR, YELLOW, GREEN, YELLOW, GREEN);
 
 				if(Location)
 				{
@@ -781,7 +782,8 @@ void PushPlayer(int client, float A = 0.0, float B = 0.0, float C = 0.0)
 	SetEntPropVector(client, Prop_Data, "m_vecBaseVelocity", vecVelo);
 }
 
-void SlowDownPlayer(int client){
+void SlowDownPlayer(int client)
+{
 	float fAbsVelocity[3];
 	GetEntPropVector(client, Prop_Data, "m_vecAbsVelocity", fAbsVelocity);
 	float fCurrentSpeed = SquareRoot(Pow(fAbsVelocity[0], 2.0) + Pow(fAbsVelocity[1], 2.0));
