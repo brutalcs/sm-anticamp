@@ -17,7 +17,7 @@ public Plugin myinfo =
 	name = "Anticamp CS:S and CS:GO",
 	author = "B3none, stachi, IT-KiLLER",
 	description = "Detects camping players",
-	version = "3.1.3",
+	version = "3.1.4",
 	url = "https://github.com/b3none"
 };
 
